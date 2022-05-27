@@ -2,6 +2,7 @@ from flask import *
 from flask_mongoengine import *
 from flask_jwt_extended import *
 from env.api_constants import mongo_password
+import os
 
 
 app = Flask(__name__)
@@ -132,3 +133,7 @@ def fetch_template_id(temp_id):
         template_obj = Template.objects(template_name=temp_id).first()
         template_obj.delete()
         return make_response('', 204)
+
+# if __name__ == "__main__":
+#     port = int(os.getenv("PORT", 5000))
+#     app.run(host='0.0.0.0', port=port)
