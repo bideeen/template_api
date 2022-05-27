@@ -52,6 +52,12 @@ class Template(db.Document):
             "body": self.body
             }
 
+@app.route('/')
+def index():
+    return make_response(jsonify({"Welcome to Template API"}), 200)
+
+
+
 @app.route('/register', methods=['POST'])
 def register():
     user = User(
