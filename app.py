@@ -126,10 +126,3 @@ def fetch_template_id(temp_id):
         template_obj = Template.objects(template_name=temp_id).first()
         template_obj.delete()
         return make_response('', 204)
-
-
-
-
-
-if __name__ == '__main__':
-    app.run(debug=True)
