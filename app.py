@@ -54,7 +54,7 @@ class Template(db.Document):
 
 @app.route('/')
 def index():
-    return make_response(jsonify({"Welcome to Template API"}), 200)
+    return "Welcome to Template API", 200
 
 
 
