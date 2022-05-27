@@ -132,4 +132,4 @@ def fetch_template_id(temp_id):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='localhost', port=5001)
+    app.run(debug=True)
