@@ -2,6 +2,7 @@ from flask import *
 from flask_mongoengine import *
 from flask_jwt_extended import *
 from env.api_constants import mongo_password
+from werkzeug.security import generate_password_hash, check_password_hash
 import os
 
 
@@ -23,7 +24,6 @@ db.init_app(app)
 
 # Defining the User schema
 class User(db.Document):
-    user_id = db.IntField()
     first_name = db.StringField()
     last_name = db.StringField()
     email = db.StringField()
@@ -32,7 +32,6 @@ class User(db.Document):
     
     def to_json(self):
         return {
-            "user_id": self.user_id,
             "first_name": self.first_name,
             "last_name": self.last_name,
             "email": self.email,
@@ -58,19 +57,30 @@ def index():
     return "Welcome to Template API", 200
 
 
-
 @app.route('/register', methods=['POST'])
 def register():
+    # get data
+    content = request.get_json(force=True)
+    first_name = content["first_name"]
+    last_name = content["last_name"]
+    email = content["email"]
+    password = content["password"]
+    
+    # Check if email exist
+    check_mail = User.objects(email=email).first()
+    if check_mail:
+        return make_response('Sorry, this email has been taken. Try Another Email.', 401)
+    
+    # save data
     user = User(
-        user_id=1, 
-        first_name='lead_test@subi.com', 
-        last_name='123456', 
-        email='lead_test@subi.com', 
-        password='123456')
+        first_name=first_name, 
+        last_name=last_name, 
+        email=email, 
+        password=generate_password_hash(password))
     
     user.save()
     
-    return make_response('Succefully Registere This User', 201)
+    return make_response('Succefully Registered This User', 201)
 
 
 @app.route('/login', methods=['POST'])
@@ -82,15 +92,24 @@ def login():
     Returns:
         access_token: Required access token for unique users        
     """
-    content = request.get_json(force=True)
-    email = content["email"]
-    password = content["password"]
-    
-    if email != "lead_test@subi.com" or password != "123456":
-        return make_response(jsonify({"msg": "Bad username or password"}), 401)
+    try:
+        content = request.get_json(force=True)
+        email = content["email"]
+        password = content["password"]
+        
+        # Check database for credentials
+        user_obj = User.objects(email=email).first()
+            
+        print(user_obj["password"], password)
+        if email == user_obj["email"] or check_password_hash(user_obj["password"], password):
+            access_token = create_access_token(identity=email)
+            return make_response(jsonify(access_token=access_token), 200)
+        
+        return make_response(jsonify({"msg": "Invalid email or password"}), 401)
+    except Exception:
+        return make_response(jsonify({"msg": "Invalid email or password"}), 402)
 
-    access_token = create_access_token(identity=email)
-    return make_response(jsonify(access_token=access_token), 200)
+    
 
 # Add and Fetch all templtaes
 @app.route('/template', methods=['POST','GET'])
