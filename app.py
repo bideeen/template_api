@@ -3,7 +3,7 @@ from flask_mongoengine import *
 from flask_jwt_extended import *
 from env.api_constants import mongo_password
 from werkzeug.security import generate_password_hash, check_password_hash
-import os
+import os, asyncio
 
 
 app = Flask(__name__)
@@ -53,12 +53,12 @@ class Template(db.Document):
             }
 
 @app.route('/')
-def index():
-    return "Welcome to Template API", 200
+async def index():
+    return await "Welcome to Template API", 200
 
 
 @app.route('/register', methods=['POST'])
-def register():
+async def register():
     # get data
     content = request.get_json(force=True)
     first_name = content["first_name"]
@@ -67,9 +67,9 @@ def register():
     password = content["password"]
     
     # Check if email exist
-    check_mail = User.objects(email=email).first()
+    check_mail = await User.objects(email=email).first()
     if check_mail:
-        return make_response('Sorry, this email has been taken. Try Another Email.', 401)
+        return await make_response('Sorry, this email has been taken. Try Another Email.', 401)
     
     # save data
     user = User(
@@ -80,11 +80,11 @@ def register():
     
     user.save()
     
-    return make_response('Succefully Registered This User', 201)
+    return await make_response('Succefully Registered This User', 201)
 
 
 @app.route('/login', methods=['POST'])
-def login():
+async def login():
     """Login Details
     Details:
         email : 'lead_test@subi.com',
@@ -93,30 +93,30 @@ def login():
         access_token: Required access token for unique users        
     """
     try:
-        content = request.get_json(force=True)
-        email = content["email"]
-        password = content["password"]
+        content = await request.get_json(force=True)
+        email = await content["email"]
+        password = await content["password"]
         
         # Check database for credentials
-        user_obj = User.objects(email=email).first()
+        user_obj = await User.objects(email=email).first()
             
         print(user_obj["password"], password)
         if email == user_obj["email"] or check_password_hash(user_obj["password"], password):
-            access_token = create_access_token(identity=email)
-            return make_response(jsonify(access_token=access_token), 200)
+            access_token = await create_access_token(identity=email)
+            return await make_response(jsonify(access_token=access_token), 200)
         
-        return make_response(jsonify({"msg": "Invalid email or password"}), 401)
+        return await make_response(jsonify({"msg": "Invalid email or password"}), 401)
     except Exception:
-        return make_response(jsonify({"msg": "Invalid email or password"}), 402)
+        return await make_response(jsonify({"msg": "Invalid email or password"}), 402)
 
     
 
 # Add and Fetch all templtaes
 @app.route('/template', methods=['POST','GET'])
 @jwt_required()
-def get_all_template():
+async def get_all_template():
     if request.method == 'POST':
-        content = request.get_json(force=True)
+        content = await request.get_json(force=True)
         temp = Template(
             template_name=content['template_name'],
             subject=content['subject'],
@@ -124,34 +124,34 @@ def get_all_template():
         )
         temp.save()
         
-        return make_response('Template Added Successfully', 201)
+        return await make_response('Template Added Successfully', 201)
     
     elif request.method == 'GET':
         temps = []
         for temp in Template.objects():
             temps.append(temp)            
-        return make_response(jsonify(temps), 201)
+        return await make_response(jsonify(temps), 201)
     
 
 # Fetch, Update and Delete unique templates
 @app.route('/template/<template_id>', methods=['GET', 'PUT', 'DELETE'])
 @jwt_required()
-def fetch_template_id(temp_id):
+async def fetch_template_id(temp_id):
     if request.method == 'GET':
-        template_obj = Template.objects(template_name=temp_id).first()
+        template_obj = await Template.objects(template_name=temp_id).first()
         if template_obj:
-            return make_response(jsonify(template_obj), 201)
+            return await make_response(jsonify(template_obj), 201)
         else:
-            return make_response('No records found', 404)
+            return await make_response('No records found', 404)
     elif request.method == 'PUT':
-        content = request.json
+        content = await request.json
         template_obj = Template.objects(template_name=temp_id).first()
         template_obj.update(author=content['subject'], name=content['body'])
-        return make_response('', 204)
+        return await make_response('', 204)
     elif request.method == 'DELETE':
-        template_obj = Template.objects(template_name=temp_id).first()
+        template_obj = await Template.objects(template_name=temp_id).first()
         template_obj.delete()
-        return make_response('', 204)
+        return await make_response('', 204)
 
 # if __name__ == "__main__":
 #     port = int(os.getenv("PORT", 5000))
